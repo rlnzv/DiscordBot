@@ -5,11 +5,11 @@ import yaml
 def getFtTime():
     return date.datetime.now().strftime('%Y/%m/%d %H:%M:%S')
 
-def formatTime(sec):
-    return fillZero(sec//3600) + ':' + fillZero(sec%3600//60) + ':' + fillZero(sec%60)
-
-def fillZero(num):
-    return '0' + str(num) if num < 10 else str(num)
+def fillZeroTime(d):
+    if len(d.split(':')[0]) == 1:
+        d = '0' + d
+    d = d.split('.')[0]
+    return d
 
 def writeLog(log):
     with open('log.txt', 'a') as f:
@@ -47,23 +47,53 @@ async def on_message(message):
             await message.delete() # 元のメッセージを削除
             return
         users_working[id] = date.datetime.now()
-        users_rest[id] = date.datetime.now()
+        # users_rest[id] = date.datetime.now()
         await message.channel.send(message.author.mention + ' \n出勤: ' + getFtTime())
         writeLog('ID: ' + str(id) + ' | 出勤: ' + getFtTime())
 
     elif message.content.startswith('!end'):
         if id in users_working:
             calc = date.datetime.now() - users_working[id]
-            calc = calc.seconds
             users_working.pop(id)
-            await message.channel.send(message.author.mention + ' \n退勤: ' + getFtTime() + ' \n出勤時間: ' + formatTime(calc))
-            writeLog('ID: ' + str(id) + ' | 退勤: ' + getFtTime() + ' | 出勤時間: ' + formatTime(calc))
+            if id in users_rest:
+                users_rest.pop(id)
+            await message.channel.send(message.author.mention + ' \n退勤: ' + getFtTime() + ' \n出勤時間: ' + fillZeroTime(str(calc)))
+            writeLog('ID: ' + str(id) + ' | 退勤: ' + getFtTime() + ' | 出勤時間: ' + fillZeroTime(str(calc)))
         else:
             msg = await message.channel.send(message.author.mention + ' \n出勤処理をしていません。')
             await msg.delete(delay=10) # 10秒後に削除
             await message.delete() # 元のメッセージを削除
             return
+        
+    elif message.content.startswith('!rest'):
+        if id in users_rest:
+            msg = await message.channel.send(message.author.mention + ' \n既に休憩処理をしています。')
+            await msg.delete(delay=10)
+            await message.delete()
+            return
+        elif id not in users_working:
+            msg = await message.channel.send(message.author.mention + ' \n出勤処理をしていません。')
+            await msg.delete(delay=10)
+            await message.delete()
+            return
+        users_rest[id] = date.datetime.now()
+        await message.channel.send(message.author.mention + ' \n休憩: ' + getFtTime())
+        writeLog('ID: ' + str(id) + ' | 休憩: ' + getFtTime())
     
+    elif message.content.startswith('!back'):
+        if id in users_rest:
+            calc = date.datetime.now() - users_rest[id]
+            users_rest.pop(id)
+            # reduce rest time from working time
+            users_working[id] = users_working[id] - calc
+            await message.channel.send(message.author.mention + ' \n復帰: ' + getFtTime() + ' \n休憩時間: ' + fillZeroTime(str(calc)))
+            writeLog('ID: ' + str(id) + ' | 復帰: ' + getFtTime() + ' | 休憩時間: ' + fillZeroTime(str(calc)))
+        else:
+            msg = await message.channel.send(message.author.mention + ' \n休憩処理をしていません。')
+            await msg.delete(delay=10)
+            await message.delete()
+            return
+
     """
     if message.content.startswith('!start'):
         await message.channel.send(f'出勤 : ({NOW})')
