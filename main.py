@@ -5,6 +5,18 @@ import yaml
 def getFtTime():
     return date.datetime.now().strftime('%Y/%m/%d %H:%M:%S')
 
+def formatTime(sec):
+    return fillZero(sec//3600) + ':' + fillZero(sec%3600//60) + ':' + fillZero(sec%60)
+
+def fillZero(num):
+    return '0' + str(num) if num < 10 else str(num)
+
+def writeLog(log):
+    with open('log.txt', 'a') as f:
+        f.write(log + '\n')
+    # console
+    print(log)
+
 # login method
 client = discord.Client()
 with open('config.yaml') as config:
@@ -29,21 +41,29 @@ async def on_message(message):
     
     id = message.author.id
     if message.content.startswith('!start'):
-        if id not in users_working:
-            msg = await message.channel.send('出勤: ' + getFtTime())
-            users_working = {id: date.datetime.now()}
-            users_rest = {id: date.datetime.now()}
-        else:
-            await message.channel.send('すでに出勤処理をしています。')
+        if id in users_working:
+            msg = await message.channel.send(message.author.mention + ' \n既に出勤処理をしています。')
+            await msg.delete(delay=10) # 10秒後に削除
+            await message.delete() # 元のメッセージを削除
+            return
+        users_working[id] = date.datetime.now()
+        users_rest[id] = date.datetime.now()
+        await message.channel.send(message.author.mention + ' \n出勤: ' + getFtTime())
+        writeLog('ID: ' + str(id) + ' | 出勤: ' + getFtTime())
+
     elif message.content.startswith('!end'):
         if id in users_working:
             calc = date.datetime.now() - users_working[id]
-            users_working.delete(id)
-            await message.channel.send()
-            
+            calc = calc.seconds
+            users_working.pop(id)
+            await message.channel.send(message.author.mention + ' \n退勤: ' + getFtTime() + ' \n出勤時間: ' + formatTime(calc))
+            writeLog('ID: ' + str(id) + ' | 退勤: ' + getFtTime() + ' | 出勤時間: ' + formatTime(calc))
         else:
-            await message.channel.send('出勤処理をしていません。')
-
+            msg = await message.channel.send(message.author.mention + ' \n出勤処理をしていません。')
+            await msg.delete(delay=10) # 10秒後に削除
+            await message.delete() # 元のメッセージを削除
+            return
+    
     """
     if message.content.startswith('!start'):
         await message.channel.send(f'出勤 : ({NOW})')
