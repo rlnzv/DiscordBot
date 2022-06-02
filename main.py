@@ -1,9 +1,11 @@
 import discord
-import datetime as date
+from datetime import datetime, timedelta, timezone
 import yaml
 
+JST = timezone(timedelta(hours=+9), 'JST')
+
 def getFtTime():
-    return date.datetime.now().strftime('%Y/%m/%d %H:%M:%S')
+    return datetime.now(JST).strftime('%Y/%m/%d %H:%M:%S')
 
 def fillZeroTime(d):
     if len(d.split(':')[0]) == 1:
@@ -14,7 +16,6 @@ def fillZeroTime(d):
 def writeLog(log):
     with open('log.txt', 'a') as f:
         f.write(log + '\n')
-    # console
     print(log)
 
 # login method
@@ -46,14 +47,14 @@ async def on_message(message):
             await msg.delete(delay=10) # 10秒後に削除
             await message.delete() # 元のメッセージを削除
             return
-        users_working[id] = date.datetime.now()
+        users_working[id] = datetime.now(JST)
         # users_rest[id] = date.datetime.now()
         await message.channel.send(message.author.mention + ' \n出勤: ' + getFtTime())
         writeLog('ID: ' + str(id) + ' | 出勤: ' + getFtTime())
 
     elif message.content.startswith('!end'):
         if id in users_working:
-            calc = date.datetime.now() - users_working[id]
+            calc = datetime.now(JST) - users_working[id]
             users_working.pop(id)
             if id in users_rest:
                 users_rest.pop(id)
@@ -76,13 +77,13 @@ async def on_message(message):
             await msg.delete(delay=10)
             await message.delete()
             return
-        users_rest[id] = date.datetime.now()
+        users_rest[id] = datetime.now(JST)
         await message.channel.send(message.author.mention + ' \n休憩: ' + getFtTime())
         writeLog('ID: ' + str(id) + ' | 休憩: ' + getFtTime())
     
     elif message.content.startswith('!back'):
         if id in users_rest:
-            calc = date.datetime.now() - users_rest[id]
+            calc = datetime.now(JST) - users_rest[id]
             users_rest.pop(id)
             # reduce rest time from working time
             users_working[id] = users_working[id] - calc
@@ -93,26 +94,5 @@ async def on_message(message):
             await msg.delete(delay=10)
             await message.delete()
             return
-
-    """
-    if message.content.startswith('!start'):
-        await message.channel.send(f'出勤 : ({NOW})')
-        StartTime = NOW #出勤時間
-        working_users[message.author.getId()] = date.datetime.now()
-    if message.content.startswith('!end'):
-        await message.channel.send(f'退勤 : ({NOW})')
-        EndTime = NOW #退勤時間
-        if message.author.getId() not in total_times:
-            total_times[message.author.getId()] = 0
-        total_times[message.author.getId()] += (EndTime - working_users[message.author.getId()]).total_seconds()    
-        working_users[message.author.getId()] = 0
-    if message.content.startswith('!rest'):
-        await message.channel.send(f'休憩 : ({NOW})')
-        OutTime = NOW #出勤時間
-        working_users[message.author.getId()] = 
-    if message.content.startswith('!back'):
-        await message.channel.send(f'復帰 : ({NOW})')
-        InTime = NOW #退勤時間
-    """
 
 client.run(TOKEN)
