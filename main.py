@@ -45,7 +45,7 @@ async def on_message(message):
         if id in users_working:
             msg = await message.channel.send(message.author.mention + ' \n既に出勤処理をしています。')
             await msg.delete(delay=10) # 10秒後に削除
-            await message.delete() # 元のメッセージを削除
+            await message.delete(delay=10) # 元のメッセージを削除
             return
         users_working[id] = datetime.now(JST)
         # users_rest[id] = date.datetime.now()
@@ -63,19 +63,19 @@ async def on_message(message):
         else:
             msg = await message.channel.send(message.author.mention + ' \n出勤処理をしていません。')
             await msg.delete(delay=10) # 10秒後に削除
-            await message.delete() # 元のメッセージを削除
+            await message.delete(delay=10) # 元のメッセージを削除
             return
         
     elif message.content.startswith('!rest'):
         if id in users_rest:
             msg = await message.channel.send(message.author.mention + ' \n既に休憩処理をしています。')
             await msg.delete(delay=10)
-            await message.delete()
+            await message.delete(delay=10)
             return
         elif id not in users_working:
             msg = await message.channel.send(message.author.mention + ' \n出勤処理をしていません。')
             await msg.delete(delay=10)
-            await message.delete()
+            await message.delete(delay=10)
             return
         users_rest[id] = datetime.now(JST)
         await message.channel.send(message.author.mention + ' \n休憩: ' + getFtTime())
@@ -92,7 +92,7 @@ async def on_message(message):
         else:
             msg = await message.channel.send(message.author.mention + ' \n休憩処理をしていません。')
             await msg.delete(delay=10)
-            await message.delete()
+            await message.delete(delay=10)
             return
 
 client.run(TOKEN)
